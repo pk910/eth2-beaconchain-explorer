@@ -56,7 +56,7 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 
 	currency := GetCurrency(r)
 
-	//start := time.Now()
+	start := time.Now()
 
 	w.Header().Set("Content-Type", "text/html")
 	vars := mux.Vars(r)
@@ -234,8 +234,8 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 	SetPageDataTitle(data, fmt.Sprintf("Validator %v", index))
 	data.Meta.Path = fmt.Sprintf("/validator/%v", index)
 
-	// logger.Infof("retrieving data, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("retrieving data, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	// we use MAX(validatorindex)+1 instead of COUNT(*) for querying the rank_count for performance-reasons
 	err = db.ReaderDb.Get(&validatorPageData, `
@@ -533,8 +533,8 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		validatorPageData.UnmissedAttestationsPercentage = float64(validatorPageData.AttestationsCount-validatorPageData.MissedAttestationsCount) / float64(validatorPageData.AttestationsCount)
 	}
 
-	// logger.Infof("attestations data retrieved, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("attestations data retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	g, _ := errgroup.WithContext(context.Background())
 	g.Go(func() error {
@@ -553,11 +553,11 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// logger.Infof("balance history retrieved, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("balance history retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
-	// logger.Infof("income data retrieved, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("income data retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	if validatorPageData.Slashed {
 		var slashingInfo struct {
@@ -592,8 +592,8 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// logger.Infof("slashing data retrieved, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("slashing data retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	eff, err := db.BigtableClient.GetValidatorEffectiveness([]uint64{index}, validatorPageData.Epoch-1)
 	if err != nil {
@@ -611,8 +611,8 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		validatorPageData.AttestationInclusionEffectiveness = eff[0].AttestationEfficiency
 	}
 
-	// logger.Infof("effectiveness data retrieved, elapsed: %v", time.Since(start))
-	// start = time.Now()
+	logger.Infof("effectiveness data retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	// sync participation
 	// get all sync periods this validator has been part of
@@ -697,6 +697,9 @@ func Validator(w http.ResponseWriter, r *http.Request) {
 		validatorPageData.SyncCount = validatorPageData.ParticipatedSyncCount + validatorPageData.MissedSyncCount + validatorPageData.OrphanedSyncCount + syncStats.ScheduledSync
 		validatorPageData.UnmissedSyncPercentage = float64(validatorPageData.SyncCount-validatorPageData.MissedSyncCount) / float64(validatorPageData.SyncCount)
 	}
+
+	logger.Infof("sync participation retrieved, elapsed: %v", time.Since(start))
+	start = time.Now()
 
 	// add rocketpool-data if available
 	validatorPageData.Rocketpool = &types.RocketpoolValidatorPageData{}
